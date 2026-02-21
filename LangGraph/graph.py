@@ -5,7 +5,7 @@ from langgraph.prebuilt import ToolNode
 from Tools.weather_info_tool import get_current_weather
 from Tools.currency_conversion_tool import convert_currency
 from langgraph.graph.message import add_messages
-from langgraph.checkpoint.memory import MemorySaver
+from Config.dbConfig import memory
 from Schemas.trip_detail_response import TripPlan
 from Nodes.router_node import router_node
 from Nodes.planner_node import planner_node
@@ -18,7 +18,6 @@ class AgentState(TypedDict):
     intent: Optional[str]
     trip_plan: Optional[TripPlan]
 
-memory = MemorySaver()
 
 
 tools = [get_current_weather, convert_currency]

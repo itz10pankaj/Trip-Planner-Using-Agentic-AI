@@ -2,6 +2,7 @@ from fastapi import FastAPI,Header
 from fastapi.middleware.cors import CORSMiddleware
 from langchain_core.messages import HumanMessage
 from typing import Optional
+from Config.dbConfig import memory
 # from Agent.planner_agent import create_planner_agent
 
 # agent = create_planner_agent()
@@ -79,7 +80,22 @@ def create_app() -> FastAPI:
             "answer": result["messages"][-1].content
         }
 
+    @app.get("/history/{thread_id}")
+    def get_history(thread_id: str):
+        messages = memory.get_messages(thread_id)
 
+        if not messages:
+            return {
+                "status": "error",
+                "message": f"No history found for thread_id: {thread_id}"
+            }
+
+        return {
+            "status": "success",
+            "thread_id": thread_id,
+            "message_count": len(messages),
+            "messages": messages
+        }
     return app
 
 app = create_app()
