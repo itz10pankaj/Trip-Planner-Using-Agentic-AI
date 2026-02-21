@@ -67,7 +67,7 @@ def create_app() -> FastAPI:
                  "configurable": { "thread_id": x_user_id }
             }
         )
-        if result.get("trip_plan"):
+        if result.get("intent") == "trip" and result.get("trip_plan"):
             return {
                 "status": "success",
                 "type": "trip_plan",
