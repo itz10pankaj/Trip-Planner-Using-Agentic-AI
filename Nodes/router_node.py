@@ -3,13 +3,7 @@ from langchain_core.messages import BaseMessage,SystemMessage,HumanMessage
 from langgraph.graph.message import add_messages
 from Agent.all_agents import router_model
 from Schemas.trip_detail_response import TripPlan
-
-
-
-class AgentState(TypedDict):
-    messages: Annotated[Sequence[BaseMessage], add_messages]
-    intent: Optional[str]
-    trip_plan: Optional[TripPlan]
+from Schemas.agent_schema import AgentState
 
 def router_node(state: AgentState):
     last_message = state["messages"][-1]

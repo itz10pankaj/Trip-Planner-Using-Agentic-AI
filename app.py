@@ -1,19 +1,7 @@
-from fastapi import FastAPI,Header
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from langchain_core.messages import HumanMessage
-from typing import Optional
-from Config.dbConfig import memory
-# from Agent.planner_agent import create_planner_agent
+from api.routes import chat,history,preference,trip
 
-# agent = create_planner_agent()
-
-from LangGraph.graph import agent
-
-
-# response = agent.invoke({
-#     "input": "what is weather of SriLanka And also tell me have you used any tool for this"
-# })
-# print(response)
 
 def create_app() -> FastAPI:
     app = FastAPI(
@@ -36,66 +24,12 @@ def create_app() -> FastAPI:
             "status": "success",
             "message": "Trip Planner API is running 🚀"
         }
+    
 
-    # @app.get("/ask")
-    # def ask_agent(question: str):
-    #     response = agent.invoke({"input": question})
-
-    #     final_output = response.get("output", "")
-
-    #     return {
-    #         "status": "success",
-    #         "question": question,
-    #         "answer": final_output,
-    #         "tools_used": [
-    #             step[0].tool for step in response.get("intermediate_steps", [])
-    #         ]
-    #     }
-
-    @app.get("/ask")
-    def ask(question: str, x_user_id: Optional[str] = Header(None, convert_underscores=False)):
-        if not x_user_id:
-            return {
-                "status":"error",
-                "message": "x_user_id is required in Headers"
-            }
-        result = agent.invoke(
-            {
-                "messages": [HumanMessage(content=question)]
-            },
-            config={
-                 "configurable": { "thread_id": x_user_id }
-            }
-        )
-        if result.get("intent") == "trip" and result.get("trip_plan"):
-            return {
-                "status": "success",
-                "type": "trip_plan",
-                "data": result["trip_plan"].model_dump()
-            }
-
-        return {
-            "status": "success",
-            "type": "general",
-            "answer": result["messages"][-1].content
-        }
-
-    @app.get("/history/{thread_id}")
-    def get_history(thread_id: str):
-        messages = memory.get_messages(thread_id)
-
-        if not messages:
-            return {
-                "status": "error",
-                "message": f"No history found for thread_id: {thread_id}"
-            }
-
-        return {
-            "status": "success",
-            "thread_id": thread_id,
-            "message_count": len(messages),
-            "messages": messages
-        }
+    app.include_router(chat.router)
+    app.include_router(history.router)
+    app.include_router(preference.router)
+    app.include_router(trip.router)
     return app
 
 app = create_app()

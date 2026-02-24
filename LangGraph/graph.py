@@ -10,7 +10,7 @@ from Schemas.trip_detail_response import TripPlan
 from Nodes.router_node import router_node
 from Nodes.planner_node import planner_node
 from Nodes.general_node import general_node
-
+from Nodes.preference_node import preference_node
 
 
 class AgentState(TypedDict):
@@ -29,12 +29,12 @@ graph.add_node("router", router_node)
 graph.add_node("planner", planner_node)
 graph.add_node("general", general_node)
 graph.add_node("tools", tool_node)
-
+graph.add_node("preferences", preference_node)
 
 graph.set_entry_point("router")
 graph.add_edge("tools", "general")
 graph.add_edge("planner", END)
-
+graph.add_edge("router", "preferences")
 
 
 def route_decision(state: AgentState):
@@ -42,19 +42,16 @@ def route_decision(state: AgentState):
         return "planner"
     return "general"
 
-
 graph.add_conditional_edges(
-    "router",
+    "general",
+    lambda state: "tools" if state["messages"][-1].tool_calls else END,
+)
+graph.add_conditional_edges(
+    "preferences",
     route_decision,
     {
         "planner": "planner",
         "general": "general"
     }
 )
-
-graph.add_conditional_edges(
-    "general",
-    lambda state: "tools" if state["messages"][-1].tool_calls else END,
-)
-
 agent = graph.compile(checkpointer=memory)

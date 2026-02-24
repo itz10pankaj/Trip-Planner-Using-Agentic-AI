@@ -88,6 +88,8 @@ class MySQLSaver(BaseCheckpointSaver):
 
         checkpoint_type, serialized_checkpoint = self.serde.dumps_typed(checkpoint)
         meta_to_store = metadata or {}
+        if isinstance(meta_to_store, dict):
+            meta_to_store = json.loads(json.dumps(meta_to_store))
         metadata_type, serialized_metadata = self.serde.dumps_typed(meta_to_store)
 
         stmt = insert(self.table).values(
@@ -101,10 +103,10 @@ class MySQLSaver(BaseCheckpointSaver):
         )
 
         stmt = stmt.on_duplicate_key_update(
-            checkpoint=serialized_checkpoint,
-            meta=checkpoint_type,
-            checkpoint_metadata=serialized_metadata,
-            checkpoint_meta_type=metadata_type,
+            checkpoint=stmt.inserted.checkpoint,
+            meta=stmt.inserted.meta,
+            checkpoint_metadata=stmt.inserted.checkpoint_metadata,
+            checkpoint_meta_type=stmt.inserted.checkpoint_meta_type,
         )
 
         with self.engine.connect() as conn:
@@ -164,46 +166,5 @@ class MySQLSaver(BaseCheckpointSaver):
                     checkpoint=checkpoint,
                     metadata=chk_metadata
                 )
-
-    # -------------------------
-    # HELPER: READ MESSAGES FOR HISTORY ROUTE
-    # -------------------------
-    def get_messages(self, thread_id: str) -> List[Dict[str, Any]]:
-        config = {"configurable": {"thread_id": thread_id, "checkpoint_ns": ""}}
-        result = self.get_tuple(config)
-
-        if not result:
-            return []
-
-        messages = result.checkpoint.get("channel_values", {}).get("messages", [])
-        formatted = []
-
-        for msg in messages:
-            entry = {
-                "type": msg.type,
-                "content": msg.content,
-                "id": getattr(msg, "id", None),
-            }
-            if msg.additional_kwargs.get("type") == "trip_plan":
-                entry["type"] = "trip_plan"
-                try:
-                    entry["content"] = json.loads(msg.content)
-                except Exception:
-                    entry["content"] = msg.content
-            if getattr(msg, "tool_calls", None):
-                entry["tool_calls"] = [
-                    {
-                        "tool": tc["name"],
-                        "args": tc["args"],
-                    }
-                    for tc in msg.tool_calls
-                ]
-            if msg.type == "tool":
-                entry["tool_name"] = getattr(msg, "name", None)
-
-            formatted.append(entry)
-
-        return formatted
-
 
 memory = MySQLSaver(DB_URL)
