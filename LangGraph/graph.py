@@ -4,6 +4,7 @@ from langchain_core.messages import BaseMessage
 from langgraph.prebuilt import ToolNode
 from Tools.weather_info_tool import get_current_weather
 from Tools.currency_conversion_tool import convert_currency
+from Tools.amadeus_hotel_tool import get_hotels
 from langgraph.graph.message import add_messages
 from Config.dbConfig import memory
 from Schemas.trip_detail_response import TripPlan
@@ -11,16 +12,18 @@ from Nodes.router_node import router_node
 from Nodes.planner_node import planner_node
 from Nodes.general_node import general_node
 from Nodes.preference_node import preference_node
-
+from Nodes.rollback_node import rollback_node
 
 class AgentState(TypedDict):
     messages: Annotated[Sequence[BaseMessage], add_messages]
     intent: Optional[str]
     trip_plan: Optional[TripPlan]
+    should_update_budget: Optional[bool]
+    hotel_data: Optional[dict]
 
 
 
-tools = [get_current_weather, convert_currency]
+tools = [get_current_weather, convert_currency,get_hotels]
 
 tool_node = ToolNode(tools)
 
@@ -30,16 +33,19 @@ graph.add_node("planner", planner_node)
 graph.add_node("general", general_node)
 graph.add_node("tools", tool_node)
 graph.add_node("preferences", preference_node)
+graph.add_node("rollback", rollback_node)
 
 graph.set_entry_point("router")
 graph.add_edge("tools", "general")
 graph.add_edge("planner", END)
 graph.add_edge("router", "preferences")
-
+graph.add_edge("rollback", END)
 
 def route_decision(state: AgentState):
     if state["intent"] == "trip":
         return "planner"
+    if state["intent"] == "rollback":
+        return "rollback"
     return "general"
 
 graph.add_conditional_edges(
@@ -51,7 +57,8 @@ graph.add_conditional_edges(
     route_decision,
     {
         "planner": "planner",
-        "general": "general"
+        "general": "general",
+        "rollback": "rollback"
     }
 )
 agent = graph.compile(checkpointer=memory)

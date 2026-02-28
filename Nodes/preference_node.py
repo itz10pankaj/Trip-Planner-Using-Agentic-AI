@@ -7,5 +7,7 @@ def preference_node(state: AgentState, config):
     prefs = get_user_preferences(thread_id)
 
     return {
-        "preferences": prefs
+        "preferences": prefs,
+        "should_update_budget": False,
+        "hotel_data": None
     }

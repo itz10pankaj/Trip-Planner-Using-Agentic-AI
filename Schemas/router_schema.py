@@ -2,4 +2,4 @@ from pydantic import BaseModel
 from typing import Literal
 
 class Intent(BaseModel):
-      intent: Literal["trip", "general"]
+      intent: Literal["trip", "general","rollback"]

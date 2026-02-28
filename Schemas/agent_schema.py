@@ -10,3 +10,5 @@ class AgentState(TypedDict):
     intent: Optional[str]
     trip_plan: Optional[TripPlan]
     preferences: Optional[dict]
+    should_update_budget: Optional[bool]
+    hotel_data: Optional[dict]

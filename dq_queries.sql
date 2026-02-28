@@ -20,10 +20,23 @@ CREATE TABLE trips (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 CREATE TABLE trip_itineraries (
-    trip_id VARCHAR(50) PRIMARY KEY,
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+
+    trip_id VARCHAR(50) NOT NULL,
+
     itinerary_json JSON,
     estimated_budget DECIMAL(10,2) NULL,
     currency VARCHAR(10),
-    FOREIGN KEY (trip_id) REFERENCES trips(trip_id) ON DELETE CASCADE
-);
 
+    version INT NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_trip
+        FOREIGN KEY (trip_id)
+        REFERENCES trips(trip_id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT unique_trip_version
+        UNIQUE (trip_id, version)
+);

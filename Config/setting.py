@@ -11,7 +11,8 @@ class Settings(BaseSettings):
     DB_PASSWORD: str
     DB_SSLMODE: str = "require"
     PROJECT_NAME:str = "AI Trip Planner"
-
+    AMADEUS_API_KEY:str
+    AMADEUS_API_SECRET:str
     class Config:
         env_file = ".env"
         extra = "ignore"

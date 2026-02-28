@@ -1,8 +1,5 @@
-from typing import TypedDict,Annotated, Sequence,Optional
-from langchain_core.messages import BaseMessage,SystemMessage,HumanMessage
-from langgraph.graph.message import add_messages
+from langchain_core.messages import SystemMessage,HumanMessage
 from Agent.all_agents import router_model
-from Schemas.trip_detail_response import TripPlan
 from Schemas.agent_schema import AgentState
 
 def router_node(state: AgentState):
@@ -23,6 +20,7 @@ def router_node(state: AgentState):
             Return:
             - "trip" ONLY if user wants to CREATE a NEW travel plan.
             - "general" for everything else including:
+            - "rollback" if user wants to restore a previous itinerary version.
               * questions ABOUT a previously planned trip
               * weather questions
               * follow-up questions on existing plans
@@ -34,6 +32,8 @@ def router_node(state: AgentState):
             - "What is the weather there?" → general
             - "Can you plan a 5 day itinerary for Rome?" → trip
             - "What hotels did you suggest?" → general
+            - "Restore version 2" → rollback
+            - "Go back to previous plan" → rollback
             """),
         HumanMessage(content=f"""
             Recent conversation:
@@ -46,4 +46,8 @@ def router_node(state: AgentState):
     ])
     
     print("ROUTER INTENT:", result.intent)
-    return {"intent": result.intent}
+    return {
+        "intent": result.intent,
+        "should_update_budget": False,
+        "hotel_data": None
+    }

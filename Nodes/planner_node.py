@@ -47,5 +47,8 @@ def planner_node(state: AgentState):
     )
     return {
         "trip_plan": structured_response,
-        "messages": [trip_message]
+        "messages": [trip_message],
+        "should_update_budget": False,
+        "hotel_data": None
     }
+    
