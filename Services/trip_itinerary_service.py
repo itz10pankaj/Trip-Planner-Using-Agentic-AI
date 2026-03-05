@@ -1,5 +1,6 @@
 from sqlalchemy import text
 from Config.database import engine
+from Config.vector_store import store_trip_memory
 import json
 
 
@@ -7,14 +8,14 @@ def save_or_update_itinerary(
     trip_id: str,
     itinerary_data: dict = None,
     estimated_budget: float | None = None,
-    currency: str | None = None
+    currency: str | None = None,
+    x_user_id:str | None = None
 ):
     """
     Creates a new version of itinerary.
     - Older active version becomes inactive.
     - If only budget is updated, previous itinerary_json is preserved.
     """
-
     with engine.begin() as conn:
 
         # 1️⃣ Get current active itinerary (if exists)
@@ -100,6 +101,23 @@ def save_or_update_itinerary(
             }
         )
 
+         # 6️⃣ Store in vector DB (only if itinerary exists)
+        if final_itinerary:
+            summary_text = build_trip_summary(
+                trip_id=trip_id,
+                itinerary_json=final_itinerary,
+                budget=final_budget,
+                currency=final_currency
+            )
+
+            store_trip_memory(
+                trip_id=trip_id,  
+                version_id=new_version,
+                user_id=x_user_id,  # replace with real user_id
+                summary=summary_text,
+                budget=final_budget
+            )
+
 
 def rollback_itinerary(trip_id: str, target_version: int):
     """
@@ -157,7 +175,27 @@ def rollback_itinerary(trip_id: str, target_version: int):
 
 
 
+def build_trip_summary(trip_id: str, itinerary_json: str, budget: float, currency: str) -> str:
+    try:
+        itinerary = json.loads(itinerary_json)
+    except Exception:
+        return f"Trip {trip_id} with budget {budget} {currency}"
 
+    destination = itinerary.get("destination", "Unknown destination")
+    days = itinerary.get("days", "multiple")
+    travel_style = itinerary.get("travel_style", "standard")
+    activities = itinerary.get("activities", [])
+
+    activities_text = ", ".join(activities[:5]) if isinstance(activities, list) else ""
+
+    summary = f"""
+    Trip to {destination} for {days} days.
+    Travel style: {travel_style}.
+    Main activities: {activities_text}.
+    Estimated budget: {budget} {currency}.
+    """
+
+    return summary.strip()
 def get_itinerary(trip_id: str):
     """
     Fetch itinerary by trip_id

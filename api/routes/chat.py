@@ -16,7 +16,8 @@ def ask(question: str,  trip_id: str,x_user_id: Optional[str] = Header(None, con
             }
         result = agent.invoke(
             {
-                "messages": [HumanMessage(content=question)]
+                "messages": [HumanMessage(content=question)],
+                "user_id": x_user_id
             },
             config={
                  "configurable": { "thread_id": trip_id }
@@ -40,6 +41,7 @@ def ask(question: str,  trip_id: str,x_user_id: Optional[str] = Header(None, con
                 itinerary_data=trip_plan,
                 estimated_budget=estimated_budget,
                 currency=currency,
+                x_user_id=x_user_id
             )
 
             return {
@@ -63,6 +65,7 @@ def ask(question: str,  trip_id: str,x_user_id: Optional[str] = Header(None, con
                 itinerary_data=None,
                 estimated_budget=estimated_budget,
                 currency=currency,
+                x_user_id=x_user_id
             )
 
         # Check if hotel_data exists in result (hotel response from general_node)

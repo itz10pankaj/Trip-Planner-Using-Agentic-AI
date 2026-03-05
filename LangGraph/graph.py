@@ -20,6 +20,9 @@ class AgentState(TypedDict):
     trip_plan: Optional[TripPlan]
     should_update_budget: Optional[bool]
     hotel_data: Optional[dict]
+    similar_trip: Optional[dict]  
+    max_budget: Optional[float]   
+    user_id: Optional[str]
 
 
 
