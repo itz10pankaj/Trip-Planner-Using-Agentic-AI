@@ -3,6 +3,7 @@ from Config.database import engine
 
 
 def get_user_preferences(user_id:str):
+    print("user_id............",user_id)
     with engine.connect() as conn:
         result = conn.execute(
             text("SELECT * FROM user_preferences WHERE user_id = :uid"),

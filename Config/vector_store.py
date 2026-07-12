@@ -137,7 +137,7 @@ if __name__ == "__main__":
     Travel style: relaxed and romantic.
     """
 
-    insert_trip(summary, "trip_001", "user_123", 1200)
+    store_trip_memory(summary, "trip_001", "user_123", 1200)
 
     print("\nSearching similar trips...\n")
 

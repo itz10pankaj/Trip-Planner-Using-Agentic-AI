@@ -46,6 +46,11 @@ def router_node(state: AgentState):
     ])
     
     print("ROUTER INTENT:", result.intent)
+    print("++++++++++++++++++++++++ Router Node result",{
+        "intent": result.intent,
+        "should_update_budget": False,
+        "hotel_data": None
+    })
     return {
         "intent": result.intent,
         "should_update_budget": False,

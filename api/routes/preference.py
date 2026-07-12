@@ -1,17 +1,18 @@
 from fastapi import APIRouter,Header
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import BaseModel,ConfigDict
 from Services.user_preferences_service import upsert_user_preferences,get_user_preferences
 
 router = APIRouter()
 
 class UserPreferences(BaseModel):
+        model_config = ConfigDict(extra="forbid")
         travel_style: str | None = None
         budget_range: str | None = None
         preferred_climate: str | None = None
         food_preference: str | None = None
         accommodation_type: str | None = None
-        pace: str | None = None
+        pace: str | None = "Fast"
         
 @router.post("/preferences")
 def save_preference(

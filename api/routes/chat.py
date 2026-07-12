@@ -12,7 +12,7 @@ def ask(question: str,  trip_id: str,x_user_id: Optional[str] = Header(None, con
         if not x_user_id:
             return {
                 "status":"error",
-                "message": "x_user_id is required in Headers"
+                "message": "x_user_id is required in Headers........"
             }
         result = agent.invoke(
             {
@@ -23,6 +23,7 @@ def ask(question: str,  trip_id: str,x_user_id: Optional[str] = Header(None, con
                  "configurable": { "thread_id": trip_id }
             }
         )
+        print("result....",result)
         if result.get("intent") == "trip" and result.get("trip_plan"):
             trip_plan = result["trip_plan"].model_dump()
             estimated_budget = None

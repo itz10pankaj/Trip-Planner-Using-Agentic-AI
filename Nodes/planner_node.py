@@ -9,7 +9,7 @@ import json
 
 
 def planner_node(state: AgentState):
-
+    print("state......",state)
     clean_messages = []
 
     for msg in state["messages"]:
