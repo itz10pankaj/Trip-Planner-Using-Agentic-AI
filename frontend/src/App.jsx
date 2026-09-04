@@ -21,7 +21,11 @@ import {
   Star,
   LogOut,
   Lock,
-  Mail
+  Mail,
+  Zap,
+  Sparkles,
+  ShieldCheck,
+  AlertTriangle
 } from 'lucide-react';
 import './App.css';
 
@@ -74,8 +78,13 @@ function App() {
   // Modals & Forms
   const [showPreferencesModal, setShowPreferencesModal] = useState(false);
   const [showNewTripModal, setShowNewTripModal] = useState(false);
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const [newTripTitle, setNewTripTitle] = useState('');
   const [newTripDestination, setNewTripDestination] = useState('');
+
+  // Subscription State
+  const [subscription, setSubscription] = useState(null);
+  const [subLoading, setSubLoading] = useState(false);
 
   // Preferences State
   const [preferences, setPreferences] = useState({
@@ -121,11 +130,12 @@ function App() {
     }
   }, []);
 
-  // Load Trips & Preferences when User ID changes
+  // Load Trips, Preferences & Subscription when User ID changes
   useEffect(() => {
     if (userId) {
       fetchTrips();
       fetchPreferences();
+      fetchSubscription();
     }
   }, [userId, apiUrl]);
 
@@ -174,6 +184,51 @@ function App() {
       }
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  // Fetch User Subscription Details
+  const fetchSubscription = async () => {
+    if (!userId) return;
+    try {
+      const res = await fetch(`${apiUrl}/subscription/status`, {
+        headers: { 'x_user_id': userId }
+      });
+      const data = await res.json();
+      if (data && data.status === 'success' && data.data) {
+        setSubscription(data.data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch subscription', err);
+    }
+  };
+
+  // Upgrade User Subscription
+  const handleUpgradeSubscription = async (targetTier) => {
+    setSubLoading(true);
+    try {
+      const res = await fetch(`${apiUrl}/subscription/upgrade`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: userId,
+          subscription_type: targetTier,
+          duration_days: 30
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.status === 'success') {
+        showToast(`Upgraded to ${targetTier.toUpperCase()} plan successfully! 🚀`);
+        setSubscription(data.data);
+        fetchSubscription();
+      } else {
+        showToast(data.detail || 'Failed to upgrade subscription.', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to connect to subscription server.', 'error');
+    } finally {
+      setSubLoading(false);
     }
   };
 
@@ -373,6 +428,26 @@ function App() {
       );
       const data = await res.json();
 
+      if (res.status === 429 || data?.detail?.type === 'rate_limit_exceeded' || data?.type === 'rate_limit_exceeded') {
+        const errorDetails = data?.detail || data;
+        const errorMsg = errorDetails.message || 'Daily rate limit reached for your subscription plan.';
+
+        setMessages(prev => [...prev, {
+          type: 'rate_limit_error',
+          content: {
+            message: errorMsg,
+            current_usage: errorDetails.current_usage || 10,
+            daily_limit: errorDetails.daily_limit || 10,
+            subscription_type: errorDetails.subscription_type || 'free'
+          },
+          isNew: true
+        }]);
+
+        showToast('Daily rate limit reached! Upgrade to continue.', 'error');
+        fetchSubscription();
+        return;
+      }
+
       if (data && data.status === 'success') {
         if (data.type === 'trip_plan') {
           setMessages(prev => [...prev, {
@@ -394,8 +469,9 @@ function App() {
             isNew: true // Trigger word-by-word animation
           }]);
         }
-        // Refresh sidebar and version list
+        // Refresh sidebar, subscription, and version list
         fetchTrips();
+        fetchSubscription();
         fetchVersions(activeTripId);
       } else {
         setMessages(prev => [...prev, {
@@ -566,16 +642,26 @@ function App() {
             <h1 className="logo-text">AI Trip Planner</h1>
           </div>
 
-          <div className="user-account-display">
+          <div className="user-account-display" onClick={() => setShowSubscriptionModal(true)} style={{ cursor: 'pointer' }}>
             <div className="user-account-info">
               <div className="user-avatar-circle">
                 {currentUser.username[0].toUpperCase()}
               </div>
-              <span className="user-name-text">{currentUser.username}</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                <span className="user-name-text">{currentUser.username}</span>
+                <span className={`user-subs-badge ${subscription?.active_tier || 'free'}`}>
+                  {(subscription?.active_tier || 'free').toUpperCase()} PLAN
+                </span>
+              </div>
             </div>
-            <button className="logout-icon-btn" onClick={handleLogout} title="Log Out">
-              <LogOut size={16} />
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <button className="logout-icon-btn" onClick={(e) => { e.stopPropagation(); setShowSubscriptionModal(true); }} title="Subscription Settings">
+                <Settings size={16} />
+              </button>
+              <button className="logout-icon-btn" onClick={(e) => { e.stopPropagation(); handleLogout(); }} title="Log Out">
+                <LogOut size={16} />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -931,7 +1017,42 @@ function App() {
                   );
                 }
 
-                // 5. Default Chat Bubbles (Human/AI)
+                // 5. Rate Limit Error rendering
+                if (msg.type === 'rate_limit_error') {
+                  const info = msg.content;
+                  return (
+                    <div key={index} className="message rate_limit_error animate-fade-in">
+                      <div className="avatar">⚠️</div>
+                      <div className="message-content">
+                        <span className="sender-name">System (Rate Limit Exceeded)</span>
+                        <div className="rate-limit-card">
+                          <div className="rate-limit-header">
+                            <span className="rate-limit-icon">🛑</span>
+                            <div>
+                              <div className="rate-limit-title">Daily Request Limit Reached</div>
+                              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                                {info.current_usage} / {info.daily_limit} requests used today on {info.subscription_type?.toUpperCase()} plan
+                              </div>
+                            </div>
+                          </div>
+                          <p className="rate-limit-desc">{info.message}</p>
+                          <div className="rate-limit-actions">
+                            <button
+                              className="btn btn-primary"
+                              style={{ fontSize: '13px', padding: '8px 14px' }}
+                              onClick={() => setShowSubscriptionModal(true)}
+                            >
+                              <Zap size={14} />
+                              Upgrade Subscription Plan
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+
+                // 6. Default Chat Bubbles (Human/AI)
                 return (
                   <div key={index} className={`message ${isHuman ? 'human' : 'ai'} animate-fade-in`}>
                     <div className="avatar">{isHuman ? '👤' : '🤖'}</div>
@@ -1201,6 +1322,130 @@ function App() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* Subscription & Account Settings Modal */}
+      {showSubscriptionModal && (
+        <div className="modal-overlay" onClick={() => setShowSubscriptionModal(false)}>
+          <div className="modal-content subscription-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Zap style={{ color: 'var(--accent-primary)' }} size={20} />
+                User Subscription Settings
+              </div>
+            </div>
+
+            <div className="modal-body">
+              {/* Current Active Plan Overview */}
+              <div className="subs-current-box">
+                <div className="subs-current-header">
+                  <span className="subs-current-title">Active Subscription Status</span>
+                  <span className={`user-subs-badge ${subscription?.active_tier || 'free'}`}>
+                    {(subscription?.active_tier || 'free').toUpperCase()} TIER
+                  </span>
+                </div>
+
+                <div className="subs-details-grid">
+                  <div className="subs-detail-item">
+                    <span className="subs-detail-label">AI Model</span>
+                    <span className="subs-detail-value">{subscription?.plan_details?.model || 'gpt-4o-mini'}</span>
+                  </div>
+                  <div className="subs-detail-item">
+                    <span className="subs-detail-label">Daily Limit</span>
+                    <span className="subs-detail-value">{subscription?.plan_details?.daily_limit || 10} Req/Day</span>
+                  </div>
+                  <div className="subs-detail-item">
+                    <span className="subs-detail-label">Expiration</span>
+                    <span className="subs-detail-value" style={{ fontSize: '12px' }}>
+                      {subscription?.expires_at ? formatDate(subscription.expires_at) : 'Never (Free)'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Upgrade / Change Plan Section */}
+              <div className="section-title" style={{ marginTop: '8px', paddingLeft: 0 }}>
+                Choose Your Plan Tier
+              </div>
+
+              <div className="plans-grid">
+                {/* FREE PLAN */}
+                <div className={`plan-card ${subscription?.active_tier === 'free' ? 'active-plan' : ''}`}>
+                  {subscription?.active_tier === 'free' && <span className="plan-badge-top">Current</span>}
+                  <div className="plan-header">
+                    <span className="plan-name">Free Plan</span>
+                    <span className="plan-price">$0<span style={{ fontSize: '12px', fontWeight: 'normal', color: 'var(--text-muted)' }}>/mo</span></span>
+                  </div>
+                  <div className="plan-features">
+                    <div className="plan-feature-item">✓ 10 Requests / Day</div>
+                    <div className="plan-feature-item">✓ gpt-4o-mini Model</div>
+                    <div className="plan-feature-item">✓ Core Features</div>
+                  </div>
+                  <button
+                    className="btn btn-secondary"
+                    style={{ width: '100%', fontSize: '13px' }}
+                    disabled={subscription?.active_tier === 'free' || subLoading}
+                    onClick={() => handleUpgradeSubscription('free')}
+                  >
+                    {subscription?.active_tier === 'free' ? 'Current Plan' : 'Downgrade to Free'}
+                  </button>
+                </div>
+
+                {/* PRO PLAN */}
+                <div className={`plan-card ${subscription?.active_tier === 'pro' ? 'active-plan' : ''}`}>
+                  {subscription?.active_tier === 'pro' && <span className="plan-badge-top">Current</span>}
+                  <div className="plan-header">
+                    <span className="plan-name" style={{ color: 'var(--accent-secondary)' }}>Pro Plan</span>
+                    <span className="plan-price">$15<span style={{ fontSize: '12px', fontWeight: 'normal', color: 'var(--text-muted)' }}>/mo</span></span>
+                  </div>
+                  <div className="plan-features">
+                    <div className="plan-feature-item">✓ 100 Requests / Day</div>
+                    <div className="plan-feature-item">✓ GPT-4o Model</div>
+                    <div className="plan-feature-item">✓ Fast Processing</div>
+                  </div>
+                  <button
+                    className="btn btn-primary"
+                    style={{ width: '100%', fontSize: '13px' }}
+                    disabled={subscription?.active_tier === 'pro' || subLoading}
+                    onClick={() => handleUpgradeSubscription('pro')}
+                  >
+                    {subLoading ? <Loader className="spinner" size={14} /> : (subscription?.active_tier === 'pro' ? 'Current Plan' : 'Upgrade to Pro')}
+                  </button>
+                </div>
+
+                {/* PREMIUM PLAN */}
+                <div className={`plan-card ${subscription?.active_tier === 'premium' ? 'active-plan' : ''}`}>
+                  {subscription?.active_tier === 'premium' && <span className="plan-badge-top">Current</span>}
+                  <div className="plan-header">
+                    <span className="plan-name" style={{ color: '#fbbf24' }}>Premium Plan</span>
+                    <span className="plan-price">$29<span style={{ fontSize: '12px', fontWeight: 'normal', color: 'var(--text-muted)' }}>/mo</span></span>
+                  </div>
+                  <div className="plan-features">
+                    <div className="plan-feature-item">✓ 1000 Requests / Day</div>
+                    <div className="plan-feature-item">✓ Top-Tier GPT-4o</div>
+                    <div className="plan-feature-item">✓ Priority Support</div>
+                  </div>
+                  <button
+                    className="btn btn-primary"
+                    style={{ width: '100%', fontSize: '13px', background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' }}
+                    disabled={subscription?.active_tier === 'premium' || subLoading}
+                    onClick={() => handleUpgradeSubscription('premium')}
+                  >
+                    {subLoading ? <Loader className="spinner" size={14} /> : (subscription?.active_tier === 'premium' ? 'Current Plan' : 'Upgrade to Premium')}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button
+                className="btn btn-secondary"
+                onClick={() => setShowSubscriptionModal(false)}
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

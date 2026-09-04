@@ -1,23 +1,43 @@
-from fastapi import APIRouter,Header
+from fastapi import APIRouter, Header, HTTPException
 from langchain_core.messages import HumanMessage
 from LangGraph.graph import agent
 from typing import Optional
 from Services.trip_itinerary_service import save_or_update_itinerary
 from Services.chat_services import extract_budget_from_text
+from Services.subscription_service import check_and_log_rate_limit
 import json
 router = APIRouter()
 
 @router.get("/trips/{trip_id}/chat")
-def ask(question: str,  trip_id: str,x_user_id: Optional[str] = Header(None, convert_underscores=False)):
+def ask(question: str,  trip_id: str, x_user_id: Optional[str] = Header(None, convert_underscores=False)):
         if not x_user_id:
             return {
-                "status":"error",
-                "message": "x_user_id is required in Headers........"
+                "status": "error",
+                "message": "x_user_id is required in Headers"
             }
+
+        # 💳 Check subscription rate limit
+        rate_check = check_and_log_rate_limit(x_user_id, endpoint="/trips/chat")
+        if not rate_check["allowed"]:
+            raise HTTPException(
+                status_code=429,
+                detail={
+                    "status": "error",
+                    "type": "rate_limit_exceeded",
+                    "message": rate_check["reason"],
+                    "current_usage": rate_check["current_usage"],
+                    "daily_limit": rate_check["daily_limit"],
+                    "subscription_type": rate_check["subscription_type"]
+                }
+            )
+
+        active_tier = rate_check["subscription_type"]
+
         result = agent.invoke(
             {
                 "messages": [HumanMessage(content=question)],
-                "user_id": x_user_id
+                "user_id": x_user_id,
+                "subscription_tier": active_tier
             },
             config={
                  "configurable": { "thread_id": trip_id }

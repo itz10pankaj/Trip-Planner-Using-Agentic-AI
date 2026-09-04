@@ -8,21 +8,13 @@ from Tools.amadeus_hotel_tool import get_hotels
 from langgraph.graph.message import add_messages
 from Config.dbConfig import memory
 from Schemas.trip_detail_response import TripPlan
+from Schemas.agent_schema import AgentState
 from Nodes.router_node import router_node
 from Nodes.planner_node import planner_node
 from Nodes.general_node import general_node
 from Nodes.preference_node import preference_node
 from Nodes.rollback_node import rollback_node
 
-class AgentState(TypedDict):
-    messages: Annotated[Sequence[BaseMessage], add_messages]
-    intent: Optional[str]
-    trip_plan: Optional[TripPlan]
-    should_update_budget: Optional[bool]
-    hotel_data: Optional[dict]
-    similar_trip: Optional[dict]  
-    max_budget: Optional[float]   
-    user_id: Optional[str]
 
 
 

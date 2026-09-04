@@ -1,7 +1,7 @@
 
 from langchain_core.messages import SystemMessage
 from Config.setting import get_settings
-from Agent.all_agents import general_model
+from Agent.all_agents import get_general_model
 from Schemas.agent_schema import AgentState
 settings = get_settings()
 
@@ -45,6 +45,8 @@ Return the raw JSON without markdown formatting for hotel results."""
 
 def general_node(state: AgentState):
     # Prepend system prompt to messages
+    subscription_tier = state.get("subscription_tier") or "free"
+    general_model = get_general_model(subscription_tier)
     messages_with_prompt = [SystemMessage(content=system_prompt)] + state["messages"]
     response = general_model.invoke(messages_with_prompt)
     import re

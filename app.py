@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from api.routes import chat, history, preference, trip, auth
+from api.routes import chat, history, preference, trip, auth, subscription
 
 
 def create_app() -> FastAPI:
@@ -31,6 +31,8 @@ def create_app() -> FastAPI:
     app.include_router(preference.router)
     app.include_router(trip.router)
     app.include_router(auth.router)
+    app.include_router(subscription.router)
     return app
+
 
 app = create_app()

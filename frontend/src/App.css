@@ -1139,3 +1139,184 @@
   justify-content: space-between;
 }
 
+/* User Subscription Badge */
+.user-subs-badge {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 10px;
+  letter-spacing: 0.5px;
+  width: fit-content;
+}
+.user-subs-badge.free {
+  background: rgba(148, 163, 184, 0.15);
+  color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+.user-subs-badge.pro {
+  background: rgba(99, 102, 241, 0.2);
+  color: #818cf8;
+  border: 1px solid rgba(99, 102, 241, 0.4);
+}
+.user-subs-badge.premium {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+/* Rate Limit Error Card */
+.rate-limit-card {
+  background: rgba(239, 68, 68, 0.05);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  max-width: 520px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.rate-limit-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.rate-limit-icon {
+  font-size: 22px;
+}
+.rate-limit-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #f87171;
+}
+.rate-limit-desc {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+.rate-limit-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+/* Subscription Modal Styles */
+.modal-content.subscription-modal {
+  max-width: 640px;
+}
+.subs-current-box {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.subs-current-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.subs-current-title {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+.subs-details-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+.subs-detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-light);
+}
+.subs-detail-label {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.subs-detail-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.plans-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  margin-top: 8px;
+}
+@media(max-width: 600px) {
+  .plans-grid, .subs-details-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.plan-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 14px;
+  transition: all var(--transition-fast);
+  position: relative;
+}
+.plan-card:hover {
+  background: rgba(255, 255, 255, 0.04);
+  transform: translateY(-2px);
+}
+.plan-card.active-plan {
+  border-color: var(--accent-primary);
+  background: rgba(99, 102, 241, 0.08);
+  box-shadow: 0 0 16px rgba(99, 102, 241, 0.15);
+}
+.plan-badge-top {
+  position: absolute;
+  top: -10px;
+  right: 12px;
+  background: var(--accent-primary);
+  color: white;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 10px;
+  text-transform: uppercase;
+}
+.plan-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.plan-name {
+  font-size: 16px;
+  font-weight: 700;
+}
+.plan-price {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--accent-secondary);
+}
+.plan-features {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.plan-feature-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+

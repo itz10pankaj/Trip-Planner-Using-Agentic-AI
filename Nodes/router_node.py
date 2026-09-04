@@ -1,9 +1,11 @@
 from langchain_core.messages import SystemMessage,HumanMessage
-from Agent.all_agents import router_model
+from Agent.all_agents import get_router_model
 from Schemas.agent_schema import AgentState
 
 def router_node(state: AgentState):
     last_message = state["messages"][-1]
+    subscription_tier = state.get("subscription_tier") or "free"
+    router_model = get_router_model(subscription_tier)
     
     recent_messages = state["messages"][-5:]
     context = "\n".join([

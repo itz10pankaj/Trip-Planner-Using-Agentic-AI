@@ -15,3 +15,4 @@ class AgentState(TypedDict):
     similar_trip: Optional[dict]   # 🔥 NEW
     max_budget: Optional[float]    # 🔥 NEW
     user_id: Optional[str]
+    subscription_tier: Optional[str]  # 💳 Subscription Tier

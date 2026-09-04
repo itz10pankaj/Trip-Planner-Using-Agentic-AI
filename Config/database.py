@@ -19,6 +19,29 @@ with engine.begin() as conn:
             user_id VARCHAR(255) PRIMARY KEY,
             username VARCHAR(255) UNIQUE NOT NULL,
             password_hash VARCHAR(255) NOT NULL,
+            subscription_type VARCHAR(50) DEFAULT 'free',
+            subscription_expires_at DATETIME NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
-    """))
+    """))
+    
+    # Add subscription columns if users table already existed
+    try:
+        conn.execute(text("ALTER TABLE users ADD COLUMN subscription_type VARCHAR(50) DEFAULT 'free'"))
+    except Exception:
+        pass
+    try:
+        conn.execute(text("ALTER TABLE users ADD COLUMN subscription_expires_at DATETIME NULL"))
+    except Exception:
+        pass
+
+    conn.execute(text("""
+        CREATE TABLE IF NOT EXISTS user_request_logs (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id VARCHAR(255) NOT NULL,
+            endpoint VARCHAR(255) NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_user_time (user_id, created_at)
+        )
+    """))
+

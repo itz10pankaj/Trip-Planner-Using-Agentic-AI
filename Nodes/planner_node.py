@@ -1,6 +1,6 @@
 from langchain_core.messages import AIMessage,SystemMessage
 from langgraph.graph.message import add_messages
-from Agent.all_agents import planner_model
+from Agent.all_agents import get_planner_model
 from Schemas.trip_detail_response import TripPlan
 from Schemas.agent_schema import AgentState
 from Config.vector_store import search_similar_with_budget
@@ -24,6 +24,7 @@ def planner_node(state: AgentState):
     preferences = state.get("preferences")
     max_budget = state.get("max_budget")
     user_id = state.get("user_id")
+    subscription_tier = state.get("subscription_tier") or "free"
     print("max_budget...............",max_budget)
     # ✅ ALWAYS initialize
     similar_trip = None
@@ -66,9 +67,11 @@ def planner_node(state: AgentState):
         content=memory_block + "\n" + preference_block
     )
     print("system_message..........",system_message)
+    planner_model = get_planner_model(subscription_tier)
     structured_response = planner_model.invoke(
         [system_message] + clean_messages
     )
+
 
     trip_message = AIMessage(
         content=json.dumps(structured_response.model_dump()),
