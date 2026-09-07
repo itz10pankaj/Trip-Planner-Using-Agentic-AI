@@ -33,9 +33,11 @@ SUBSCRIPTION_PLANS: Dict[str, Dict[str, Any]] = {
 
 def get_user_subscription(user_id: str) -> Dict[str, Any]:
     """
-    Fetch user's subscription details.
+    Fetch user's subscription details including today's request usage, days remaining, and expiry state.
     If the subscription has expired, fall back to the 'free' tier.
     """
+    today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+
     with engine.connect() as conn:
         row = conn.execute(
             text("""
@@ -46,26 +48,49 @@ def get_user_subscription(user_id: str) -> Dict[str, Any]:
             {"user_id": user_id}
         ).fetchone()
 
+        # Count today's requests
+        count_row = conn.execute(
+            text("""
+                SELECT COUNT(*) FROM user_request_logs
+                WHERE user_id = :user_id
+                AND created_at >= :today_start
+            """),
+            {"user_id": user_id, "today_start": today_start}
+        ).fetchone()
+
+        requests_today = count_row[0] if count_row else 0
+
         if not row:
-            # Default to free tier if user record not found
+            plan_info = SUBSCRIPTION_PLANS["free"]
             return {
                 "user_id": user_id,
                 "active_tier": "free",
                 "is_expired": False,
                 "expires_at": None,
-                "plan_details": SUBSCRIPTION_PLANS["free"]
+                "days_remaining": 0,
+                "requests_today": requests_today,
+                "daily_limit": plan_info["daily_limit"],
+                "usage_percentage": min(100, round((requests_today / plan_info["daily_limit"]) * 100, 1)),
+                "plan_details": plan_info
             }
 
         sub_type = row[0] or "free"
         expires_at = row[1]
         
         is_expired = False
+        days_remaining = 0
+
         if expires_at and sub_type != "free":
-            if datetime.now() > expires_at:
+            now = datetime.now()
+            if now > expires_at:
                 is_expired = True
                 sub_type = "free"  # Downgrade active tier to free if expired
+            else:
+                delta = expires_at - now
+                days_remaining = max(1, delta.days)
 
         plan_info = SUBSCRIPTION_PLANS.get(sub_type, SUBSCRIPTION_PLANS["free"])
+        daily_limit = plan_info["daily_limit"]
 
         return {
             "user_id": user_id,
@@ -73,8 +98,13 @@ def get_user_subscription(user_id: str) -> Dict[str, Any]:
             "raw_subscription_type": row[0] or "free",
             "is_expired": is_expired,
             "expires_at": expires_at.isoformat() if expires_at else None,
+            "days_remaining": days_remaining,
+            "requests_today": requests_today,
+            "daily_limit": daily_limit,
+            "usage_percentage": min(100, round((requests_today / daily_limit) * 100, 1)),
             "plan_details": plan_info
         }
+
 
 
 def update_user_subscription(user_id: str, subscription_type: str, duration_days: int = 30) -> Dict[str, Any]:

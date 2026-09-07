@@ -2,7 +2,8 @@
 
 :root {
   --font-sans: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
-  
+  --font-mono: 'SFMono-Regular', 'Fira Code', Consolas, 'Liberation Mono', Menlo, monospace;
+
   /* Color Palette - Ultra Premium Dark */
   --bg-primary: #0a0b10;
   --bg-secondary: #11131c;
@@ -114,4 +115,11 @@ body {
   display: flex;
   width: 100%;
   height: 100%;
+  overflow: hidden;
+}
+
+@media (max-width: 480px) {
+  body {
+    font-size: 15px;
+  }
 }

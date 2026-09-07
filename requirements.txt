@@ -6,3 +6,4 @@ openai
 langgraph-checkpoint-postgres 
 psycopg2-binary
 asyncpg
+stripe  

@@ -13,6 +13,10 @@ class Settings(BaseSettings):
     PROJECT_NAME:str = "AI Trip Planner"
     AMADEUS_API_KEY:str
     AMADEUS_API_SECRET:str
+    STRIPE_SECRET_KEY: str 
+    STRIPE_PUBLISHABLE_KEY: str 
+    STRIPE_WEBHOOK_SECRET: str 
+
     class Config:
         env_file = ".env"
         extra = "ignore"
